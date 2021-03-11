@@ -416,14 +416,40 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         num_adr, localite_adr, nomRue_adr, cp_adr, ville_adr, pays_adr, continent_adr = eclater_adresse(adresse)
         out_file.write('EXEC INSERT_ADRESSES(' + str(
             id_adr) + ',' + num_adr + ',' + localite_adr + ',' + nomRue_adr + ',' + cp_adr + ',' + ville_adr + ',' + pays_adr + ',' + continent_adr + ');\n')
+
+    # # Insertion Permis
+    # for p in permis:
+    #     p = p.strip().upper()
+    #     date_obtention = 'NULL'
+      #  out_file.write(
+       #      'EXEC INSERT_OBTENTIONPERMIS(\'' + p + '\',\'' + str(id_can) + '\',' + date_obtention + ');\n')
+
     # Insertion Candidats
+
     out_file.write('EXEC INSERT_CANDIDATS(\'' + str(id_can) + '\',' + str(
         id_adr) + ',' + nom + ',' + prenom + ',' + sexe + ',' + age + ',' + date_naiss + ',' + mail + ',' + nationalite + ',' + tel + ');\n')
+
+    print(str(id_can))
+
+
+
     # Insertion Permis
     for p in permis:
-        p = p.strip().upper()
-        date_obtention = 'NULL'
-        out_file.write('EXEC INSERT_OBTENTIONPERMIS(\'' + p + '\',\'' + str(id_can) + '\',' + date_obtention + ');\n')
+         p = p.strip().upper()
+
+    if permis:
+    # Insertion Candidats
+         out_file.write('EXEC INSERT_CANDIDATS(\'' + str(id_can) + '\',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
+                   + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
+                   + ',' + permis[0] + ',' + sexe + ',' + mail + ');\n')
+    else:
+        out_file.write(
+            'EXEC INSERT_CANDIDATS(\'' + str(id_can) + '\',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
+            + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
+            + ',' + "NULL" + ',' + sexe + ',' + mail + ');\n')
+
+
+
     # Insertion sites/Réseaux sociaux
     for s in site_res:
         id_site = ids['id_site'][0]
