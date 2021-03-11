@@ -461,7 +461,7 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         specialite = unidecode.unidecode(formation[1].strip().upper())
         ecole = unidecode.unidecode(formation[2].strip().upper())
         out_file.write('EXEC INSERT_SUIT_FORMATIONS(' + ecole + ',' + niveau + ',' + specialite + ',\'' + str(
-            id_can) + '\',' + convert_date(formation[3]) + ',' + convert_date(formation[4]) + ');\n')
+            id_can) + '\',' + formation[3] + ',' + formation[4] + ');\n')
 
     # Insertion Compétence
     for competence in listCompetence:
@@ -527,43 +527,6 @@ def find_cat_cpt(cpt):
         return '\'' + 'SOFTSKILLS' + '\''
     else:
         return 'NULL'
-
-
-def convert_date(date):
-    """
-    Fonction permettant de convertir les dates dans le format souhaité
-    @params:
-        date -Require : La date
-    @return 
-        date : La date dans le bon format
-    """
-    # On se met en français
-    dateNorm = date[1:][:-1].lower()
-    if re.match('(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre) ([0-9]{4})',
-                dateNorm):
-        if re.match('decembre [0-9]+', dateNorm):
-            an = re.sub('decembre ([0-9]+)', '\g<1>', dateNorm)
-            dateNorm = 'décembre ' + an
-        elif re.match('fevrier [0-9]+', dateNorm):
-            an = re.sub('fevrier ([0-9]+)', '\g<1>', dateNorm)
-            dateNorm = 'février ' + an
-        elif re.match('aout [0-9]+', dateNorm):
-            an = re.sub('aout ([0-9]+)', '\g<1>', dateNorm)
-            dateNorm = 'août ' + an
-        locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
-        # On récupère convertie la date en format numrique en supprimant les apostrophes en début et fin de date
-        dateConvert = datetime.strptime(dateNorm, '%B %Y')
-        # On crée la date
-        date = '\'' + str(dateConvert.day) + '/' + str(dateConvert.month) + '/' + str(dateConvert.year) + '\''
-    elif re.match('([0-9]{4})', dateNorm):
-        locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
-        # On récupère convertie la date en format numrique en supprimant les apostrophes en début et fin de date
-        dateConvert = datetime.strptime(dateNorm, '%Y')
-        # On crée la date
-        date = '\'' + str(dateConvert.day) + '/' + str(dateConvert.month) + '/' + str(dateConvert.year) + '\''
-
-    date = date.strip().upper()
-    return date
 
 
 # Fonction permettant de séprarer les différents attributs d'une adresse
