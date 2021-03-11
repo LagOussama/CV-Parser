@@ -174,9 +174,7 @@ MUSIQUE                  2
 PHOTOGRAPHIE             2
 */ 
  
--- Quels candidats a une photo sur son CV
 
-SELECT NOMCAN,PRENOMCAN FROM CANDIDATS JOIN CV USING(IDCAN) WHERE PHOTO IS NOT NULL;
 
 /*
 NOMCAN          PRENOMCAN
