@@ -392,9 +392,12 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     id_adr = ids['id_adr'][0]
     id_cv = ids['id_cv'][0]
     id_site = ids['id_site'][0]
+    id_dipl = ids['id_dipl'][0]
+
 
     new_id_can = int(id_can) + 1
     new_id_cv = int(id_cv) + 1
+    new_id_dipl = int(id_dipl) + 1
 
     if adresse == 'NULL':
         new_id_adr = int(id_adr)
@@ -403,9 +406,11 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         new_id_adr = int(id_adr) + 1
         id_adr = '\'' + str(id_adr) + '\''
 
+
+
     # Insertion des id (pour éviter la redondance)
     ids = pd.DataFrame(
-        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv], 'id_site': [int(id_site)]})
+        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv],'id_dipl': [new_id_dipl] ,'id_site': [int(id_site)]})
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
     # On écrit dans le fichier de sortie .sql
@@ -418,33 +423,23 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
             id_adr) + ',' + num_adr + ',' + localite_adr + ',' + nomRue_adr + ',' + cp_adr + ',' + ville_adr + ',' + pays_adr + ',' + continent_adr + ');\n')
 
     # # Insertion Permis
+
     # for p in permis:
     #     p = p.strip().upper()
     #     date_obtention = 'NULL'
-      #  out_file.write(
-       #      'EXEC INSERT_OBTENTIONPERMIS(\'' + p + '\',\'' + str(id_can) + '\',' + date_obtention + ');\n')
+    #  out_file.write(
+    #      'EXEC INSERT_OBTENTIONPERMIS(\'' + p + '\',\'' + str(id_can) + '\',' + date_obtention + ');\n')
 
     # Insertion Candidats
-
-    out_file.write('EXEC INSERT_CANDIDATS(\'' + str(id_can) + '\',' + str(
-        id_adr) + ',' + nom + ',' + prenom + ',' + sexe + ',' + age + ',' + date_naiss + ',' + mail + ',' + nationalite + ',' + tel + ');\n')
-
-    print(str(id_can))
-
-
-
-    # Insertion Permis
-    for p in permis:
-         p = p.strip().upper()
 
     if permis:
     # Insertion Candidats
-         out_file.write('EXEC INSERT_CANDIDATS(\'' + str(id_can) + '\',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
+         out_file.write('EXEC INSERT_Candidats(' + str(id_can) + ',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
                    + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
                    + ',' + permis[0] + ',' + sexe + ',' + mail + ');\n')
     else:
         out_file.write(
-            'EXEC INSERT_CANDIDATS(\'' + str(id_can) + '\',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
+            'EXEC INSERT_Candidats(' + str(id_can) + ',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
             + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
             + ',' + "NULL" + ',' + sexe + ',' + mail + ');\n')
 
@@ -461,11 +456,13 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
         s = unidecode.unidecode(s)
         out_file.write('EXEC INSERT_SITES_RESEAUX(\'' + str(id_site) + '\',\'' + str(id_can) + '\',\'' + s + '\');\n')
+
     # Insertion des langues
     for langue, niveau in listLangues:
         langue = langue.strip().upper()
         niveau = niveau.strip().upper()
-        out_file.write('EXEC INSERT_RELATION_LANG_CAN(' + langue + ',\'' + str(id_can) + '\',' + niveau + ');\n')
+        print('EXEC INSERT_Langues(' + str(id_can) + ',' + langue + ',' + niveau + ');\n')
+        out_file.write('EXEC INSERT_Langues(' + str(id_can) + ',' + langue + ',' + niveau + ');\n')
     # Insertion CV
     titre_cv = 'NULL'
     description_cv = 'NULL'
@@ -481,19 +478,26 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     out_file.write('EXEC INSERT_CV(\'' + str(id_cv) + '\',\'' + str(
         id_can) + '\',\'' + nom_cv + '\',' + titre_cv + ',' + description_cv + ',' + posteRecherche_cv + ',' + typePoste_cv + ',' + dispo_cv + ',' + admis + ',' + date_transmission+ ');\n')
 
+#insertion Diplomes
+
+    for formation in tabFormation:
+        specialite = unidecode.unidecode(formation[1].strip().upper())
+        out_file.write('EXEC INSERT_Diplomes(' + str(id_dipl) + ',' + specialite +  ');\n')
+
+
     # Insertion Formations
     for formation in tabFormation:
         niveau = unidecode.unidecode(formation[0].strip().upper())
         specialite = unidecode.unidecode(formation[1].strip().upper())
         ecole = unidecode.unidecode(formation[2].strip().upper())
-        out_file.write('EXEC INSERT_SUIT_FORMATIONS(' + ecole + ',' + niveau + ',' + specialite + ',\'' + str(
+        out_file.write('EXEC INSERT_SUIT_Formations(' + ecole + ',' + niveau + ',' + specialite + ',\'' + str(
             id_can) + '\',' + formation[3] + ',' + formation[4] + ');\n')
 
     # Insertion Compétence
     for competence in listCompetence:
         competence = unidecode.unidecode(competence.strip().upper())
         catCpt = find_cat_cpt(competence)
-        out_file.write('EXEC INSERT_RELATION_COMP_CAN(' + competence + ',' + catCpt + ',\'' + str(id_can) + '\');\n')
+        out_file.write('EXEC INSERT_Competences('+ str(id_can) + ','+ competence + ',' + catCpt + '\');\n')
 
     # Insertion Centre d'interêts
     for centreInteret in listCentreInteret:
