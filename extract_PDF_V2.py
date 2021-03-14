@@ -198,7 +198,7 @@ def parser_text(storage_file, pdf_file, text):
         fichier.close()
 
     tabFormation = extraire_formation(text)
-    listCompetence = extraire_competence(text)
+    listCompetence = competenceExtraction(text)
     listLangues = extraire_langue(text)
     listCentreInteret = extraire_centreInteret(text)
     adresse = unidecode.unidecode(adresse)
@@ -294,23 +294,19 @@ def extraire_formation(text):
 
     return tabFormation
 
+def competenceExtraction(data):
+    cleanedData = cleanText(data)
 
-def extraire_competence(text):
-    # clean le texte du cv
-    s = cleanText(text)
-    regex = r"(Communication|réseautage|Esprit d equipe|Travail autonome|Capacité à travailler sous pression|marketing|rédaction|développement de contenu|Gestion du temps|Photoshop|Joomia|Indesign|Graphisme|Illustration|Photographie|Images animéees|Vidéographie|Mise en page|Ruby|Microsoft ASP.NET MVC.Web API|C#|éco-responsables|processus de recyclage|Conceptualisation des espaces 3D|Gestion de marque|Analyse des concurrents|Marketing sur les réseaux sociaux|Optimisation du moteur de recherche|Marketing de contenu|Recherche de marché|Rédacteur publicitaire|notions juridiques et financières|Rigueur|diplomatie|Travailleur social agréé|Association|action sociale|Sens de responsabilités|Travail en équipe|Flexible|Facilité dintégration|Sens de responsabilité|Autodidaxie|Créativité et force de proposition|Ambitieux|Organisé|Appliqué|Désireux dapprendre|Dynamique|Communication|adaptation facile|nouvelles technologies|Bénévole|Organisé|autonome|assidu|curieux|Travail en équipe|Persévérant|Adaptable|Communicant|Curiosité|Sérieux|Motivé|rigoureux|organisé|autonome|Bonne capacité danalyse|traitements de problématiques|Bonnes qualités rédactionnel|bonne approche des clients|Sens  négociation|Capacité dadaptation|Compétences relationnelles|Esprit déquipe|Travail en équipe|Respect des délais|Établir un cahier des charges|Capacité à sorganiser|Déterminé|curieuse|rigoureuse|aventures|Relationnel|Adaptabilité|Apprentissage|Rigueur|Autonomie|Travail en groupe|Travail sous pression|Autonome|Organisé|Rigoureux|Eclipse|NetBeans|AndroidStudio|Code:Blocks|Dev\-C\+\+|VisualStudio|STVisualdevelop|IDE|SASSoftware|SASViya|Jupyter|Linux|Ubuntu|NASM|Anaconda|Spyder|Talend|Tableau|BusinessObjects|SAS|Jira|Trello|jupyter-notebook|pycharm|Oracle|SasStudio|Mangodb|PowerBI|Talend|Tableau|Excel|Jupyter|Anaconda|Jupyter|spyder|KNIME|PhpMyAdmin|Colab|Dynamic|Dynamique|collaborative work|Collaboratif|Analyse critique|Ponctualité|Travail en groupe|Gestion de temps|Esprit d’analyse|Méticulosité|communication|Agile|Waterfal|Python|SQL|PL/SQL|SAS|Java|C|SQL|MATLAB|Python|Sql|Java|OcamlMatlab|UML|Haskell|SQL3|SAS|JavaScript|PHP|J2E|Pascal|HTML|CSS|XML|R|Java/JEE|OCaml|Mysql|Html|VBA|DATA warehouse|DateWarehouse|PHP5|Symfony|Angular9|SpringBoot|JEE|HTML5|CSS3|JS|JavaScript|pandas|numpy|matplotlib|seaborn|PLSQL|Ocaml|Scala|SQL|PLSQL|NoSQL|Prolog|SAS|Oracle|MongoDB|MySQL|Talend|Tableau|BusinessObjects|TensorFlow|Keras|Scikit-learn|Scikit-Fuzzy|MicrosoftOfficeExcel|Prolog|Oracle|MongoDB|MySQL|DataBase|Talend|DataIntegration|DataQuality|SAS|Tableau|BusinessObjects|HADOOP|HDFS|MapReduce|HBASE|SPARK|RSTUDIO|WEKA|IBMSPSSMODELER|REDIS|MongoDB|JupyterNotebook|Eclipse|SAS|VisualStudioCode|Rstudio|AndroidStudio|Git|Oracle|SASViya|SAS9|MangoDB|MATLAB|Oracle|BusinessObjects|MéthodeAgile|SCRUM|Trello|GitHub|oracle|PLSQL|SQLserver|SSIS|Trello|Word|Excel|PowerPoint|make|git|Oracle|SasStudio|PowerBI|Excel|Jupyter|ApacheKakfa|Elasticsearch|Logstash|Kibana|FileBeat|Trello|MarvenApp|Git|UML|Docker|SpringBoot|SpringData|SpringSecurity|HTML|Thymeleaf|CSS|VB|UML|GRASPpattern|Merise|Proto.io|Axure|Internet des objets|IOT|Business intelligence|Représentation graphique de données statistiques|Domotique|meetup tafterworks|Statistiques)"
-    matches = re.finditer(regex, s, re.MULTILINE | re.IGNORECASE)
-    listecompetences = []
-    competence = "null"
-
-    for matchNum, match in enumerate(matches, start=1):
-        competence = "'" + match.group().lower().strip() + "'"
-        listecompetences.append(competence)
-
-    setCompetence = set(listecompetences)  # transforme en set pour enlever doublon
-    listCompetence = list(setCompetence)  # remet en liste
-
-    return (listCompetence)
+    extracted = re.finditer(
+        r"(Communication|réseautage|Esprit d equipe|Travail autonome|Capacité à travailler sous pression|marketing|rédaction|développement de contenu|Gestion du temps|Photoshop|Joomia|Indesign|Graphisme|Illustration|Photographie|Images animéees|Vidéographie|Mise en page|Ruby|Microsoft ASP.NET MVC.Web API|C#|éco-responsables|processus de recyclage|Conceptualisation des espaces 3D|Gestion de marque|Analyse des concurrents|Marketing sur les réseaux sociaux|Optimisation du moteur de recherche|Marketing de contenu|Recherche de marché|Rédacteur publicitaire|notions juridiques et financières|Rigueur|diplomatie|Travailleur social agréé|Association|action sociale|Sens de responsabilités|Travail en équipe|Flexible|Facilité dintégration|Sens de responsabilité|Autodidaxie|Créativité et force de proposition|Ambitieux|Organisé|Appliqué|Désireux dapprendre|Dynamique|Communication|adaptation facile|nouvelles technologies|Bénévole|Organisé|autonome|assidu|curieux|Travail en équipe|Persévérant|Adaptable|Communicant|Curiosité|Sérieux|Motivé|rigoureux|organisé|autonome|Bonne capacité danalyse|traitements de problématiques|Bonnes qualités rédactionnel|bonne approche des clients|Sens  négociation|Capacité dadaptation|Compétences relationnelles|Esprit déquipe|Travail en équipe|Respect des délais|Établir un cahier des charges|Capacité à sorganiser|Déterminé|curieuse|rigoureuse|aventures|Relationnel|Adaptabilité|Apprentissage|Rigueur|Autonomie|Travail en groupe|Travail sous pression|Autonome|Organisé|Rigoureux|Eclipse|NetBeans|AndroidStudio|Code:Blocks|Dev\-C\+\+|VisualStudio|STVisualdevelop|IDE|SASSoftware|SASViya|Jupyter|Linux|Ubuntu|NASM|Anaconda|Spyder|Talend|Tableau|BusinessObjects|SAS|Jira|Trello|jupyter-notebook|pycharm|Oracle|SasStudio|Mangodb|PowerBI|Talend|Tableau|Excel|Jupyter|Anaconda|Jupyter|spyder|KNIME|PhpMyAdmin|Colab|Dynamic|Dynamique|collaborative work|Collaboratif|Analyse critique|Ponctualité|Travail en groupe|Gestion de temps|Esprit d’analyse|Méticulosité|communication|Agile|Waterfal|Python|SQL|PL/SQL|SAS|Java|C|SQL|MATLAB|Python|Sql|Java|OcamlMatlab|UML|Haskell|SQL3|SAS|JavaScript|PHP|J2E|Pascal|HTML|CSS|XML|R|Java/JEE|OCaml|Mysql|Html|VBA|DATA warehouse|DateWarehouse|PHP5|Symfony|Angular9|SpringBoot|JEE|HTML5|CSS3|JS|JavaScript|pandas|numpy|matplotlib|seaborn|PLSQL|Ocaml|Scala|SQL|PLSQL|NoSQL|Prolog|SAS|Oracle|MongoDB|MySQL|Talend|Tableau|BusinessObjects|TensorFlow|Keras|Scikit-learn|Scikit-Fuzzy|MicrosoftOfficeExcel|Prolog|Oracle|MongoDB|MySQL|DataBase|Talend|DataIntegration|DataQuality|SAS|Tableau|BusinessObjects|HADOOP|HDFS|MapReduce|HBASE|SPARK|RSTUDIO|WEKA|IBMSPSSMODELER|REDIS|MongoDB|JupyterNotebook|Eclipse|SAS|VisualStudioCode|Rstudio|AndroidStudio|Git|Oracle|SASViya|SAS9|MangoDB|MATLAB|Oracle|BusinessObjects|MéthodeAgile|SCRUM|Trello|GitHub|oracle|PLSQL|SQLserver|SSIS|Trello|Word|Excel|PowerPoint|make|git|Oracle|SasStudio|PowerBI|Excel|Jupyter|ApacheKakfa|Elasticsearch|Logstash|Kibana|FileBeat|Trello|MarvenApp|Git|UML|Docker|SpringBoot|SpringData|SpringSecurity|HTML|Thymeleaf|CSS|VB|UML|GRASPpattern|Merise|Proto.io|Axure|Internet des objets|IOT|Business intelligence|Représentation graphique de données statistiques|Domotique|meetup tafterworks|Statistiques)",
+        cleanedData,
+        re.MULTILINE | re.IGNORECASE 
+    )
+    competences = []
+    for value in extracted:
+        if "'" + value.group().lower().strip() + "'" not in competences: #pour ne pas insérer des doublons dans la liste
+            competences.append("'" + value.group().lower().strip() + "'")
+    return competences
 
 
 def extraire_langue(text):

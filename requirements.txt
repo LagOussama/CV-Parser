@@ -1,0 +1,9 @@
+deep-translator
+pdf2image
+opencv-python
+strsimpy
+soundex
+PyMuPDF
+pandas
+unidecode
+numpy
