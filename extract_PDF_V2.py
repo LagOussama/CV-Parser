@@ -388,13 +388,12 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     id_can = ids['id_can'][0]
     id_adr = ids['id_adr'][0]
     id_cv = ids['id_cv'][0]
-    id_site = ids['id_site'][0]
     id_dipl = ids['id_dipl'][0]
     id_formation = ids['id_formation'][0]
     id_compet = ids['id_compet'][0]
     id_lang = ids['id_lang'][0]
     id_loisir = ids['id_loisir'][0]
-
+    id_ecole = ids['id_ecole'][0]
 
 
     new_id_can = int(id_can) + 1
@@ -414,8 +413,8 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
 
     # Insertion des id (pour éviter la redondance)
     ids = pd.DataFrame(
-        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] ,'id_site': [int(id_site)], 'id_formation' : [new_id_formation],
-         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1]})
+        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] , 'id_formation' : [new_id_formation],
+         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1] , 'id_ecole' : [int(id_ecole) + 1]})
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
     # On écrit dans le fichier de sortie .sql
@@ -448,16 +447,11 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
 
 
     # Insertion sites/Réseaux sociaux
-    for s in site_res:
-        id_site = ids['id_site'][0]
-        new_id_site = int(id_site) + 1
 
         # Insertion des id (pour éviter la redondance)
         ids = pd.DataFrame(
-            {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv], 'id_site': [new_id_site]})
+            {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv]})
         ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
-        s = unidecode.unidecode(s)
-        out_file.write('EXEC INSERT_SITES_RESEAUX(\'' + str(id_site) + '\',\'' + str(id_can) + '\',\'' + s + '\');\n')
 
     newlist3 = []
     # Insertion des langues
@@ -473,25 +467,11 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
 
 
 
-    # Insertion CV !!!!!!!!!!!!!!!!  PAS ENCORE !!!!!!!!!!!!!!!!
-    titre_cv = 'NULL'
-    description_cv = 'NULL'
-    posteRecherche_cv = 'NULL'
-    typePoste_cv = 'NULL'
-    dispo_cv = 'NULL'
-    admis = '\'' + 'ACCEPTE' + '\''
-    if storage_file.lower().find('refuse') >= 0:
-        admis = '\'' + 'REFUSE' + '\''
-    date_transmission = 'SYSDATE'
-    nom_cv = unidecode.unidecode(pdf_file)
-
-    out_file.write('EXEC INSERT_CV(\'' + str(id_cv) + '\',\'' + str(
-        id_can) + '\',\'' + nom_cv + '\',' + titre_cv + ',' + description_cv + ',' + posteRecherche_cv + ',' + typePoste_cv + ',' + dispo_cv + ',' + admis + ',' + date_transmission+ ');\n')
 
 #insertion Diplomes
 
     new_list = []
-
+    new_listEcole = []
 
     for formation in tabFormation:
         niveau = unidecode.unidecode(formation[0].strip().upper())
@@ -502,11 +482,22 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
                 id_dipl = id_dipl + 1
                 new_list.append(specialite)
                 out_file.write('EXEC INSERT_Diplomes(' + str(id_dipl) + ',' + specialite + ');\n')
+
+            if ecole not in new_listEcole:
+                new_listEcole.append(ecole)
+                id_ecole = id_ecole  + 1 ;
+
             out_file.write(
                 'EXEC INSERT_Formations(' + str(id_formation) + ',' + specialite + ',' +
-                formation[3] + ',' + formation[4] + ',' + 'NULL' + ',' + niveau + ',' + str(id_dipl) + ',' + ecole + ',' + str(
+                formation[3] + ',' + formation[4] + ',' + 'NULL' + ',' + niveau + ',' + str(id_dipl) + ',' + str(id_ecole) + ',' + str(
                     id_can) + ');\n')
-
+            if ecole == 'NULL':
+                out_file.write(
+                    'EXEC INSERT_EtablissementPedagogique(' + str(id_ecole) + ',' + 'DetailsEtablissement' + ','+ "'Ecole Inconnu'" + ',' +'VILLE'+ ',' + 'PAYS' + ');\n')
+            else:
+                out_file.write(
+                    'EXEC INSERT_EtablissementPedagogique(' + str(
+                        id_ecole) + ',' + 'DetailsEtablissement' + ',' + ecole + ',' + 'VILLE' + ',' + 'PAYS' + ');\n')
     # Insertion Compétence
     new_list2 = []
 
@@ -536,8 +527,8 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
 
 # Insertion des id (pour éviter la redondance)
     ids = pd.DataFrame(
-        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] ,'id_site': [int(id_site)], 'id_formation' : [new_id_formation],
-         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1], 'id_dipl' : [int(id_dipl) + 1] })
+        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] , 'id_formation' : [new_id_formation],
+         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1], 'id_dipl' : [int(id_dipl) + 1], 'id_ecole' : [int(id_ecole) + 1] })
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
 
