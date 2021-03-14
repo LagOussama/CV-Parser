@@ -70,8 +70,9 @@ CREATE TABLE Langues(
 -- Table: Competences
 ------------------------------------------------------------
 CREATE TABLE Competences(
-	IdCompetence  NUMBER NOT NULL ,
+	IdCompetence  NUMBER NOT NULL , (1,'R','2') (2,'C','2') (3,'JAVA','2')
 	Competence    VARCHAR2 (50) NOT NULL  ,
+	GenreCompetence    VARCHAR2 (50) NOT NULL  ,
 	CONSTRAINT Competences_PK PRIMARY KEY (IdCompetence)
 );
 
@@ -80,7 +81,6 @@ CREATE TABLE Competences(
 ------------------------------------------------------------
 CREATE TABLE GenreCompetences(
 	IdGenreCompetence  NUMBER NOT NULL ,
-	GenreCompetence    VARCHAR2 (50) NOT NULL  ,
 	IdCompetence       NUMBER(10,0)  NOT NULL  ,
 	CONSTRAINT GenreCompetences_PK PRIMARY KEY (IdGenreCompetence)
 	,CONSTRAINT GenreCompetences_FK FOREIGN KEY (IdCompetence) REFERENCES Competences(IdCompetence)
@@ -180,7 +180,6 @@ CREATE TABLE Diplomes(
 CREATE TABLE Formations(
 	IdFormations                NUMBER NOT NULL ,
 	SpecialiteFormation         VARCHAR2 (100) NOT NULL  ,
-	OptionFormation             VARCHAR2 (100)  ,
 	-- Date
 	DateDebutFormation          VARCHAR(50)   ,
 	DateFinFormation            VARCHAR(50)  ,

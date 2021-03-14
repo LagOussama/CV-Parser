@@ -223,6 +223,7 @@ def corr_prenom(prenom):
     return prenom
 
 
+
 def extraire_formation(text):
     # clean le texte du cv
     s = cleanText(text)
@@ -389,11 +390,18 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     id_cv = ids['id_cv'][0]
     id_site = ids['id_site'][0]
     id_dipl = ids['id_dipl'][0]
+    id_formation = ids['id_formation'][0]
+    id_compet = ids['id_compet'][0]
+    id_lang = ids['id_lang'][0]
+    id_loisir = ids['id_loisir'][0]
+
 
 
     new_id_can = int(id_can) + 1
     new_id_cv = int(id_cv) + 1
     new_id_dipl = int(id_dipl) + 1
+    new_id_formation = int(id_formation) + 1
+
 
     if adresse == 'NULL':
         new_id_adr = int(id_adr)
@@ -406,7 +414,8 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
 
     # Insertion des id (pour éviter la redondance)
     ids = pd.DataFrame(
-        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv],'id_dipl': [new_id_dipl] ,'id_site': [int(id_site)]})
+        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] ,'id_site': [int(id_site)], 'id_formation' : [new_id_formation],
+         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1]})
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
     # On écrit dans le fichier de sortie .sql
@@ -415,9 +424,6 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     # Insertion Adresses
     if adresse != 'NULL':
         num_adr, localite_adr, nomRue_adr, cp_adr, ville_adr, pays_adr, continent_adr = eclater_adresse(adresse)
-        out_file.write('EXEC INSERT_ADRESSES(' + str(
-            id_adr) + ',' + num_adr + ',' + localite_adr + ',' + nomRue_adr + ',' + cp_adr + ',' + ville_adr + ',' + pays_adr + ',' + continent_adr + ');\n')
-
     # # Insertion Permis
 
     # for p in permis:
@@ -453,13 +459,21 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         s = unidecode.unidecode(s)
         out_file.write('EXEC INSERT_SITES_RESEAUX(\'' + str(id_site) + '\',\'' + str(id_can) + '\',\'' + s + '\');\n')
 
+    newlist3 = []
     # Insertion des langues
     for langue, niveau in listLangues:
         langue = langue.strip().upper()
         niveau = niveau.strip().upper()
-        print('EXEC INSERT_Langues(' + str(id_can) + ',' + langue + ',' + niveau + ');\n')
-        out_file.write('EXEC INSERT_Langues(' + str(id_can) + ',' + langue + ',' + niveau + ');\n')
-    # Insertion CV
+
+        if langue not in newlist3:
+            newlist3.append(langue)
+            id_lang = id_lang + 1
+            out_file.write('EXEC INSERT_Langues(' + str(id_lang) + ',' + langue +');\n')
+            out_file.write('EXEC INSERT_LanguesCandidat(' + str(id_can) + ',' + str(id_lang) + ',' + niveau+ ');\n')
+
+
+
+    # Insertion CV !!!!!!!!!!!!!!!!  PAS ENCORE !!!!!!!!!!!!!!!!
     titre_cv = 'NULL'
     description_cv = 'NULL'
     posteRecherche_cv = 'NULL'
@@ -476,32 +490,55 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
 
 #insertion Diplomes
 
-    for formation in tabFormation:
-        specialite = unidecode.unidecode(formation[1].strip().upper())
-        out_file.write('EXEC INSERT_Diplomes(' + str(id_dipl) + ',' + specialite +  ');\n')
+    new_list = []
 
 
-    # Insertion Formations
     for formation in tabFormation:
         niveau = unidecode.unidecode(formation[0].strip().upper())
         specialite = unidecode.unidecode(formation[1].strip().upper())
         ecole = unidecode.unidecode(formation[2].strip().upper())
-        out_file.write('EXEC INSERT_SUIT_Formations(' + ecole + ',' + niveau + ',' + specialite + ',\'' + str(
-            id_can) + '\',' + formation[3] + ',' + formation[4] + ');\n')
+        if specialite != 'NULL' :
+            if specialite not in new_list:
+                id_dipl = id_dipl + 1
+                new_list.append(specialite)
+                out_file.write('EXEC INSERT_Diplomes(' + str(id_dipl) + ',' + specialite + ');\n')
+            out_file.write(
+                'EXEC INSERT_Formations(' + str(id_formation) + ',' + specialite + ',' +
+                formation[3] + ',' + formation[4] + ',' + 'NULL' + ',' + niveau + ',' + str(id_dipl) + ',' + ecole + ',' + str(
+                    id_can) + ');\n')
 
     # Insertion Compétence
+    new_list2 = []
+
+
     for competence in listCompetence:
         competence = unidecode.unidecode(competence.strip().upper())
-        catCpt = find_cat_cpt(competence)
-        out_file.write('EXEC INSERT_Competences('+ str(id_can) + ','+ competence + ',' + catCpt + '\');\n')
+        if competence not in new_list2:
+            new_list2.append(competence)
+            id_compet  = id_compet + 1
+            catCpt = find_cat_cpt(competence)
+            out_file.write('EXEC INSERT_Competences('+ str(id_compet) + ','+ competence + ',' + catCpt + ');\n')
+            out_file.write('EXEC INSERT_CompetencesCandidat('+ str(id_compet) + ','+ str(id_can) + ');\n')
+
 
     # Insertion Centre d'interêts
     for centreInteret in listCentreInteret:
         centreInteret = unidecode.unidecode(centreInteret.strip().upper())
-        out_file.write('EXEC INSERT_RELATION_CENTINT_CAN(' + centreInteret + ',\'' + str(id_can) + '\');\n')
+        if centreInteret not in new_list2:
+            new_list2.append(centreInteret)
+            id_loisir = id_loisir + 1
+            out_file.write('EXEC INSERT_Loisirs(' + str(id_loisir)+ ',' + centreInteret +');\n')
+            out_file.write('EXEC INSERT_LoisirsCandidat('+ str(id_loisir) + ','+ str(id_can) + ');\n')
+
 
     out_file.close()
     # print(mail,tel,adresse,age,prenom,nom,sexe,permis,site_res)
+
+# Insertion des id (pour éviter la redondance)
+    ids = pd.DataFrame(
+        {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] ,'id_site': [int(id_site)], 'id_formation' : [new_id_formation],
+         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1], 'id_dipl' : [int(id_dipl) + 1] })
+    ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
 
 def find_cat_cpt(cpt):

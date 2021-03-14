@@ -1,2 +1,2 @@
-id_adr,id_can,id_cv,id_dipl,id_site
-141,177,177,32,11
+id_adr,id_can,id_cv,id_site,id_formation,id_compet,id_lang,id_loisir,id_dipl
+222,258,258,11,80,193,28,19,119
