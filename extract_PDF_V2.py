@@ -19,6 +19,7 @@ from pdf2image import convert_from_path
 from datetime import datetime
 import locale
 from deep_translator import GoogleTranslator
+import regx
 
 
 def cleanText(text):
@@ -28,174 +29,54 @@ def cleanText(text):
     return output
 
 
-def extract_text_pdf(storage_file, pdf_files):
-    """
-    Fonction permettant de gérer l'extraction d'information des PDF
-    @params:
-        storage_file    - Required : Le fichier de stockage des PDF
-        pdf_files       - Required : La liste des fichiers PDF
-    """
+def read_pdf(storage_directory, pdf_files):
+    # Fonction permettant de gérer l'extraction d'information des PDF
 
-    taille = len(pdf_files)
-    compteur = 1
+    # taille = len(pdf_files)
+    # compteur = 1
 
     for pdf_file in pdf_files:
-        # Ouverture du CV
-        doc = fitz.open(storage_file + pdf_file)
-        # Pour chaque page du CV, on recupère tout le texte
-        text = ""
+
+        # Lecture du CV
+        doc = fitz.open(storage_directory + pdf_file)
+
+        # on recupère tout le texte
+        content = ""
         for page in doc:
-            text = text + str(page.getText())
-        tx = " ".join(text.split('\n'))
+            content = content + str(page.getText())
+
+        # élimine les retour à la ligne
+        tx = " ".join(content.split('\n'))
+
+        # On Supprime les caractères non désirable
         tx = unidecode.unidecode(tx)
-        # On traduit le texte en francais par ex: United Kingdom -> Royaume-Unis)
+
+        # On traduit le texte en francais
         tx = GoogleTranslator(source='auto', target='fr').translate(tx)
+
         # Extraction des informations des CV
-        parser_text(storage_file, pdf_file, tx)
+        parse_string(storage_directory, pdf_file, tx)
 
-        compteur = compteur + 1
+        # compteur = compteur + 1
 
 
-def parser_text(storage_file, pdf_file, text):
+def parse_string(storage_directory, pdf_file, text):
     """
     Fonction d'extraire l'information d'un PDF
-    @params:
-        storage_file   - Required  : Le fichier de stockage des PDF
-        pdf_file        - Required  : Le nom du fichier PDF
-        text            - Required  : Le contenu du fichier PDF
     """
 
     # Enlever les accents du text extrait du pdf
     text = unidecode.unidecode(text)
-    # Définition des regexp
-    regexp_mail = re.compile("[A-Za-z]+[A-Za-z0-9--\._]+@[A-Za-z0-9\.\-]+\.[A-Za-z]{2,4}")
-
-    regexp_tel = re.compile('(?:(?:\+|00)33|0)\s?[1-9](?:[\s.-]?\d{2}){4}')
-    regexp_adresse = re.compile(
-        '[0-9]+(?:BIS|TER)?,? ?(?:AVENUE|RUE|BOULEVARD|QUAI|IMPASSE|PONT|PLACE|SQUARE|ALLEE|ALLEES|VOIE|MONTEE|ESPLANADE|ROUTE|VOIRIE|CITE|CHEMIN|PARVIS) [A-Z ]+,? ?(?:[0-9]{5}| )? [A-Z\-]+')
-    regexp_age = re.compile('[0-9]{2,3} ANS')
-    regexp_permis = re.compile(
-        'PERMIS ?(?:DE CONDUIRE|TYPE)? ?:? ?(?:AM|BSR|A|A1|A2|B|B1|B2|BE|BVA|C|C1|CE|C1E|D|D1|D2|DE|DE1)')
-    regexp_site_res = re.compile('(?:HTTP://|HTTPS://|HTTPS://)[A-Z0-9\.-=/]+')
-    # Récupération du mail, tel, adresse, age, permis, sexe, site
-    # Mail
-    mail = re.findall(regexp_mail, text)
-    if mail != []:
-        mail = mail[0]
-        mail = '\'' + mail + '\''
-    else:
-        mail = 'NULL'
-
-    # Tel
-    tel = re.findall(regexp_tel, text)
-    if tel != []:
-        tel = tel[0]
-        tel = tel.replace(' ', '')
-        tel = tel.replace('-', '')
-        tel = tel.replace('.', '')
-        tel = '\'' + tel + '\''
-    else:
-        tel = 'NULL'
-    # Adresse
-    adresse = re.findall(regexp_adresse, text.upper())
-    if adresse != []:
-        adresse = adresse[0]
-    else:
-        adresse = 'NULL'
-    # Age
-    age = re.findall(regexp_age, text.upper())
-    if age != []:
-        age = age[0]
-        age = re.sub('([0-9]{2,3}) ANS', '\g<1>', age)
-    else:
-        age = 'NULL'
-    # Permis
-    listPermis = re.findall(regexp_permis, text.upper())
-    permis = []
-    for p in listPermis:
-        if re.match('PERMIS ?(?:DE CONDUIRE|TYPE)? ?:? ?(?:AM|BSR|A|A1|A2|B|B1|B2|BE|BVA|C|C1|CE|C1E|D|D1|D2|DE|DE1)',
-                    p):
-            per = re.sub(
-                'PERMIS ?(?:DE CONDUIRE|TYPE)? ?:? ?((?:AM|BSR|A|A1|A2|B|B1|B2|BE|BVA|C|C1|CE|C1E|D|D1|D2|DE|DE1))',
-                '\g<1>', p)
-            permis.append(per)
-    # Sites/Réseaux
-    site_res = re.findall(regexp_site_res, text.upper())
-
-    # Récuperation du nom
-    nom = 'NULL'
-    if re.match('2020-12-03(?:-|_)CV(?:-|_)[A-Z]+(?:-|_)[A-Za-zéïàèîôû_\-]+.pdf', pdf_file):
-        nom = re.sub('2020-12-03(?:-|_)CV(?:-|_)([A-Z]+)(?:-|_)([A-Za-zéïàèîôû_\-]+).pdf', '\g<1>', pdf_file)
-        nom = '\'' + unidecode.unidecode(nom) + '\''
-
-    # Récupération du prénom et du sexe (grâce à la base de Prénoms.csv qui contient le sexe associé au prénom)
-    prenom = 'NULL'
-    sexe = 'NULL'
-    if re.match('2020-12-03(?:-|_)CV(?:-|_)[A-Z]+(?:-|_)[A-Za-zéïàèîôû_\-]+.pdf', pdf_file):
-        prenom = re.sub('2020-12-03(?:-|_)CV(?:-|_)[A-Z]+(?:-|_)([A-Za-zéïàèîôû_\-]+).pdf', '\g<1>', pdf_file)
-        prenom = prenom.strip().capitalize()
-        fichier = open("Prenoms.csv", "r")
-        for line in fichier:
-            if line.lower().split(';')[0].lower() == prenom.lower():
-                sexe = line.lower().split(';')[1].upper()
-                sexe = '\'' + sexe[0] + '\''
-                break
-        fichier.close()
-        # Si le prénom n'est pas dans la base de données
-        # On va essayer de trouver le sexe en fonction des sons (soundex) et de la distance (Levenshtein) entre les prénoms
-        # Ainsi, on va prendre un autre prénom proche phonétiquement et grammatiquement et on va prendre le sexe de ce prénom
-        if sexe == 'NULL':
-            dict_similitude = dict()
-            fichier = open("Prenoms.csv", "r")
-            for line in fichier:
-                # Si le prénom produit le même son
-                # On ajoute son score Levenshtein et le sexe associé
-                if soundex.get_soundex_code(line.lower().split(';')[0].lower()) == soundex.get_soundex_code(
-                        prenom.lower()):
-                    normalized_levenshtein = NormalizedLevenshtein()
-                    dict_similitude[
-                        normalized_levenshtein.similarity(line.lower().split(';')[0].lower(), prenom.lower())] = \
-                    line.lower().split(';')[1]
-            # On associe le sexe du prénom qui maximise la similarité entre les prénoms  (si le dictionnaire n'est pas vide)
-            if bool(dict_similitude):
-                sexe = dict_similitude[max(dict_similitude, key=dict_similitude.get)].upper()
-                sexe = '\'' + sexe[0] + '\''
-            fichier.close()
-        prenom = corr_prenom(prenom)
-        prenom = '\'' + prenom.strip() + '\''
-    # Si le pdf n'est pas de la forme souhaité (dans un but d'élargissement à d'autre CV)
-    # Dans notre Projet, si notre base de CV est bien construite, on ne tombe pas dans ce cas
-    else:
-        fichier = open("Prenoms.csv", "r")
-        for line in fichier:
-            # On cherche dans chaque PDF est ce que un mot (un prénom) apparait dans la base des prénoms
-            if line.lower().split(';')[0] in text.lower().split():
-                prenom = line.lower().split(';')[0]
-                prenom = corr_prenom(prenom)
-
-                sexe = line.split(';')[1].upper()
-                sexe = '\'' + sexe[0] + '\''
-
-                # Si le mot qu'on a désigné comme étant un prénom est présent dans le titre du pdf ou le mail du condidat, il y a de forte probabilité que ça soit bien le prénom
-                for adr in mail:
-                    if adr.lower().find(prenom.lower()) >= 0:
-                        prenom = corr_prenom(prenom)
-                        prenom = '\'' + prenom.strip() + '\''
-                        break
-                if pdf_file.lower().find(prenom.lower()) >= 0:
-                    prenom = corr_prenom(prenom)
-                    prenom = '\'' + prenom.strip() + '\''
-                    break
-            else:
-                # Si le prénom ne se trouve pas dans la base de données, on fonctionne avec la phonétique du nom du fichier
-                for mot in pdf_file.split('_'):
-                    mot = mot.replace('.', ' ')
-                    if soundex.get_soundex_code(line.lower().split(';')[0]) == soundex.get_soundex_code(mot):
-                        prenom = mot
-                        prenom = corr_prenom(prenom)
-                        prenom = '\'' + prenom.strip() + '\''
-                        break
-        fichier.close()
+    mail = regx.findMail(text)
+    tel = regx.findPhone(text)
+    adresse = regx.findAdresse(text)
+    age = regx.findAge(text)
+    permis = regx.findDriverlicence(text)
+    web = regx.findSites(text)
+    nom  = regx.findName(pdf_file)
+    prenom, sexe  = regx.findFirstName_sexe(pdf_file,mail)
+    print(prenom)
+    print(sexe)
 
     tabFormation = extraire_formation(text)
     listCompetence = competenceExtraction(text)
@@ -205,8 +86,9 @@ def parser_text(storage_file, pdf_file, text):
     nom = unidecode.unidecode(nom)
     mail = unidecode.unidecode(mail)
     # Appelle de la fonction pour creer les requetes d'insertions
-    create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, site_res, 'NULL', 'NULL',
+    create_requete(storage_directory, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, web, 'NULL', 'NULL',
                    tabFormation, listCompetence, listLangues, listCentreInteret)
+
 
 
 def corr_prenom(prenom):
@@ -308,6 +190,7 @@ def competenceExtraction(data):
         if "'" + value.group().lower().strip() + "'" not in competences: #pour ne pas insérer des doublons dans la liste
             competences.append("'" + value.group().lower().strip() + "'")
     return competences
+
 
 
 def extraire_langue(text):
@@ -425,24 +308,18 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         num_adr, localite_adr, nomRue_adr, cp_adr, ville_adr, pays_adr, continent_adr = eclater_adresse(adresse)
     # # Insertion Permis
 
-    # for p in permis:
-    #     p = p.strip().upper()
-    #     date_obtention = 'NULL'
-    #  out_file.write(
-    #      'EXEC INSERT_OBTENTIONPERMIS(\'' + p + '\',\'' + str(id_can) + '\',' + date_obtention + ');\n')
-
-    # Insertion Candidats
-
     if permis:
     # Insertion Candidats
          out_file.write('EXEC INSERT_Candidats(' + str(id_can) + ',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
                    + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
-                   + ',' + permis[0] + ',' + sexe + ',' + mail + ');\n')
+                   + "','" + permis[0] + "','" + sexe + ',' + mail + ');\n')
+
+
     else:
         out_file.write(
             'EXEC INSERT_Candidats(' + str(id_can) + ',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
             + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
-            + ',' + "NULL" + ',' + sexe + ',' + mail + ');\n')
+            + ',' + "'NULL'" + ',' + sexe + ',' + mail + ');\n')
 
 
 
@@ -659,6 +536,6 @@ if __name__ == '__main__':
 
     list_pdf_files = [f for f in listdir(storage_file) if isfile(join(storage_file, f))]
     # Extraction de l'informations des PDF et création des requetes SQL dans les fichiers SQL
-    extract_text_pdf(storage_file, list_pdf_files)
+    read_pdf(storage_file, list_pdf_files)
 
     print('Extraction des PDF terminée, vous pouvez lancer les fichiers SQL (.sql)')
