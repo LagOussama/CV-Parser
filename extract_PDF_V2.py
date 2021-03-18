@@ -75,10 +75,9 @@ def parse_string(storage_directory, pdf_file, text):
     web = regx.findSites(text)
     nom  = regx.findName(pdf_file)
     prenom, sexe  = regx.findFirstName_sexe(pdf_file,mail)
-    print(prenom)
-    print(sexe)
 
     tabFormation = extraire_formation(text)
+    tabExperience = get_experiences(text)
     listCompetence = competenceExtraction(text)
     listLangues = extraire_langue(text)
     listCentreInteret = extraire_centreInteret(text)
@@ -87,7 +86,7 @@ def parse_string(storage_directory, pdf_file, text):
     mail = unidecode.unidecode(mail)
     # Appelle de la fonction pour creer les requetes d'insertions
     create_requete(storage_directory, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, web, 'NULL', 'NULL',
-                   tabFormation, listCompetence, listLangues, listCentreInteret)
+                   tabFormation, tabExperience, listCompetence, listLangues, listCentreInteret)
 
 
 
@@ -172,10 +171,10 @@ def extraire_formation(text):
         for matchNumEcole, matchSpecialite in enumerate(matchesSpecialite, start=1):
             specialite = "'" + matchSpecialite.group().strip() + "'"
 
-            # out_file.write("EXEC INSERT_FORMATION("+ str(idFormation) +","+ niveau +","+ specialite +","+ ecole +","+  dateDebut +","+ dateFin +")\n")
         tabFormation.append([niveau, specialite, ecole, dateDebut, dateFin])
 
     return tabFormation
+
 
 def competenceExtraction(data):
     cleanedData = cleanText(data)
@@ -232,12 +231,87 @@ def extraire_centreInteret(text):
     setCentreInteret = set(listeCentreInteret)  # transforme en set pour enlever doublon
     listCentreInteret = list(setCentreInteret)  # remet en liste
 
-    # print(listCentreInteret)
     return (listCentreInteret)
 
 
+def get_experiences(text):
+    s = cleanText(text)
+    # regEXp = r"(EXPERIENCES PROFESSIONNELLES)(.*?)(LANGUES)"
+    # results = re.finditer(regEXp, s, re.MULTILINE | re.IGNORECASE)
+    s = re.search(r"EXPERIENCES PROFESSIONNELLES(.*)LANGUES", s, re.MULTILINE | re.IGNORECASE).group(1)
+
+    regex = r"((janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)[ ])(20[0-2][0-9]|19[0-9][0-9])(.{0,30}?)(STAGE)(.{0,100}?)((janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)[ ])?(20[0-2][0-9]|19[0-9][0-9])"
+
+    matches1 = re.finditer(regex, s, re.MULTILINE | re.IGNORECASE)
+    compteur1 = 0
+
+    regexDate = r"((janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)[ ])?(20[0-2][0-9]|19[0-9][0-9])"
+
+    listexp1 = []
+    for matchNum, match in enumerate(matches1, start=1):
+        # print("match ",match.group(6).strip()) #4  #6
+        element = []
+        dateDebut1 = "NULL"
+        dateFin1 = "NULL"
+        title1 = "NULL"
+        firm1 = "NULL"
+        compteur1 = compteur1 + 1
+        title1 = "'" + match.group(4).strip() + "'"
+        firm1 = "'" + re.search(r"chez(.*)", match.group(6).strip(), re.MULTILINE | re.IGNORECASE).group(1).replace("'", ' ') + "'"
+        matchesDate = re.finditer(regexDate, match.group().strip(), re.MULTILINE | re.IGNORECASE)
+        compteurDate = 0
+        # print(" title ", title1)
+        # print(" firm ", firm1)
+        for matchNumDate, matchDate in enumerate(matchesDate, start=1):
+            if matchNumDate == 1:
+                dateDebut1 = "'" + matchDate.group().strip() + "'"
+            elif matchNumDate == 2:
+                dateFin1 = "'" + matchDate.group().strip() + "'"
+        element.append(dateDebut1)
+        element.append(dateFin1)
+        element.append(title1)
+        element.append(firm1)
+        listexp1.append(element)
+        # print("start ",dateDebut1)
+        # print("end ",dateFin1)
+    listexp2 = []
+    regx2 = r"(stage)(.*?)(((janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)[ ])?(20[0-2][0-9]|19[0-9][0-9]))"
+    matches2 = re.finditer(regx2, s, re.MULTILINE | re.IGNORECASE)
+    compteur2 = 0
+    for matchNum, match in enumerate(matches2, start=1):
+        element = []
+        dateDebut2 = "NULL"
+        dateFin2 = "NULL"
+        title2 = "NULL"
+        firm2 = "NULL"
+        result = re.search(r"(.*)(chez)(.*)", match.group(2).strip(), re.MULTILINE | re.IGNORECASE)
+        firm2 = "'" + result.group(3).replace("'", ' ') + "'"
+        title2 = "'" + result.group(1) + "'"
+        compteur2 = compteur2 + 1
+        matchesDate = re.finditer(regexDate, match.group().strip(), re.MULTILINE | re.IGNORECASE)
+        compteurDate = 0
+        for matchNumDate, matchDate in enumerate(matchesDate, start=1):
+            if matchNumDate == 1:
+                dateDebut2 = "'" + matchDate.group().strip() + "'"
+            elif matchNumDate == 2:
+                dateFin2 = "'" + matchDate.group().strip() + "'"
+        element.append(dateDebut2)
+        element.append(dateFin2)
+        element.append(title2)
+        element.append(firm2)
+        listexp2.append(element)
+
+    reg = 0
+    if compteur1 >= compteur2:
+        explist = listexp1
+    else:
+        explist = listexp2
+
+    return (explist)
+
+
 def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, site_res, date_naiss,
-                   nationalite, tabFormation, listCompetence, listLangues, listCentreInteret):
+                   nationalite, tabFormation,tabExperience ,listCompetence, listLangues, listCentreInteret):
     """
     Fonction permettant de créer les requêtes d'insertion dans le fichier .sql
     La fonction va se charger de faire les modifications des données pour qu'elles collent aux insertions
@@ -277,6 +351,8 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     id_lang = ids['id_lang'][0]
     id_loisir = ids['id_loisir'][0]
     id_ecole = ids['id_ecole'][0]
+    id_etabl = ids['id_etablissement'][0]
+    idExp = ids['idExp'][0]
 
 
     new_id_can = int(id_can) + 1
@@ -297,7 +373,7 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     # Insertion des id (pour éviter la redondance)
     ids = pd.DataFrame(
         {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] , 'id_formation' : [new_id_formation],
-         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1] , 'id_ecole' : [int(id_ecole) + 1]})
+         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1] , 'id_ecole' : [int(id_ecole) + 1], 'id_etablissement' : [int(id_etabl) + 1],  'idExp' : [int(idExp) + 1]})
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
     # On écrit dans le fichier de sortie .sql
@@ -308,27 +384,38 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         num_adr, localite_adr, nomRue_adr, cp_adr, ville_adr, pays_adr, continent_adr = eclater_adresse(adresse)
     # # Insertion Permis
 
+    nomm = nom.split("'")
+    nomPers = nomm[1];
+
+    prenomm = prenom.split("'")
+    prenomPers = prenomm[1];
+
+
+
+    photo = "'" +  "2020-12-10-PH_" + nomPers + "_" + prenomPers + ".jpg"+"'"
+    CV = "'" +  "2020-12-03-CV_" + nomPers + "_" + prenomPers + ".jpg"+"'"
+
+
     if permis:
-    # Insertion Candidats
-         out_file.write('EXEC INSERT_Candidats(' + str(id_can) + ',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
-                   + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
-                   + "','" + permis[0] + "','" + sexe + ',' + mail + ');\n')
-
-
+        permi = "'"+ permis[0] + "'"
     else:
-        out_file.write(
-            'EXEC INSERT_Candidats(' + str(id_can) + ',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
-            + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
-            + ',' + "'NULL'" + ',' + sexe + ',' + mail + ');\n')
+        permi = "'NULL'"
+
+    out_file.write('EXEC INSERT_Candidats(' + str(id_can) + ',' + nom + ',' + prenom + ',' + date_naiss + ',' + tel
+                   + ',' + mail + ',' + num_adr + ',' + nomRue_adr + ',' + ville_adr + ',' + pays_adr + ',' + cp_adr
+                   + ',' + permi + ',' + sexe + ','  + CV + ',' + photo +');\n')
+
+
+
 
 
 
     # Insertion sites/Réseaux sociaux
 
         # Insertion des id (pour éviter la redondance)
-        ids = pd.DataFrame(
+    ids = pd.DataFrame(
             {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv]})
-        ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
+    ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
     newlist3 = []
     # Insertion des langues
@@ -342,10 +429,29 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
             out_file.write('EXEC INSERT_Langues(' + str(id_lang) + ',' + langue +');\n')
             out_file.write('EXEC INSERT_LanguesCandidat(' + str(id_can) + ',' + str(id_lang) + ',' + niveau+ ');\n')
 
+    new_listEtabProf = []
+    for experience in tabExperience:
+        dateDeb = unidecode.unidecode(experience[0].strip().upper())
+        dateFin = unidecode.unidecode(experience[1].strip().upper())
+        Titre = unidecode.unidecode(experience[2].strip().upper())
+        etablissement = unidecode.unidecode(experience[3].strip().upper())
+        idExp = idExp + 1
 
+        if etablissement != 'NULL':
+            if etablissement not in new_listEtabProf:
+                id_etabl = id_etabl + 1
+                new_listEtabProf.append(etablissement)
+                out_file.write('EXEC INSERT_EtablissementProfessionnelle(' + str(id_etabl) + ',' + etablissement + ');\n')
+                out_file.write('EXEC INSERT_ExperiencesProfessionnelles(' + str(idExp) + ',' + Titre + ','+ str(id_etabl) + ');\n')
+                out_file.write('EXEC INSERT_EtablissementProCandidat(' + str(id_etabl)  + ','+ str(id_can) +',' + dateDeb + ',' + dateFin + ');\n')
 
-
-#insertion Diplomes
+            else:
+                out_file.write(
+                    'EXEC INSERT_EtablissementProfessionnelle(' + str(id_etabl) + ',' + etablissement + ');\n')
+                out_file.write('EXEC INSERT_ExperiencesProfessionnelles(' + str(idExp) + ',' + Titre + ',' + str(
+                    id_etabl) + ');\n')
+                out_file.write('EXEC INSERT_EtablissementProCandidat(' + str(id_etabl) + ',' + str(
+                    id_can) + ',' + dateDeb + ',' + dateFin + ');\n')
 
     new_list = []
     new_listEcole = []
@@ -370,11 +476,12 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
                     id_can) + ');\n')
             if ecole == 'NULL':
                 out_file.write(
-                    'EXEC INSERT_EtablissementPedagogique(' + str(id_ecole) + ',' + 'DetailsEtablissement' + ','+ "'Ecole Inconnu'" + ',' +'VILLE'+ ',' + 'PAYS' + ');\n')
+                    'EXEC INSERT_EtablissementPedagogique(' + str(id_ecole) + ',' + "'DetailsEtablissement'" + ','+ "'Ecole Inconnu'" + ',' +"'VILLE'"+ ',' + "'PAYS'" + ');\n')
             else:
                 out_file.write(
                     'EXEC INSERT_EtablissementPedagogique(' + str(
-                        id_ecole) + ',' + 'DetailsEtablissement' + ',' + ecole + ',' + 'VILLE' + ',' + 'PAYS' + ');\n')
+                        id_ecole) + ',' + "'DetailsEtablissement'" + ',' + ecole + ',' + "'VILLE'" + ',' + "'PAYS'" + ');\n')
+
     # Insertion Compétence
     new_list2 = []
 
@@ -384,7 +491,9 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
         if competence not in new_list2:
             new_list2.append(competence)
             id_compet  = id_compet + 1
-            catCpt = find_cat_cpt(competence)
+
+            catCpt = regx.findCompetenceCat(competence)
+           # catCpt = find_cat_cpt(competence)
             out_file.write('EXEC INSERT_Competences('+ str(id_compet) + ','+ competence + ',' + catCpt + ');\n')
             out_file.write('EXEC INSERT_CompetencesCandidat('+ str(id_compet) + ','+ str(id_can) + ');\n')
 
@@ -400,12 +509,11 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
 
 
     out_file.close()
-    # print(mail,tel,adresse,age,prenom,nom,sexe,permis,site_res)
 
 # Insertion des id (pour éviter la redondance)
     ids = pd.DataFrame(
         {'id_adr': [new_id_adr], 'id_can': [new_id_can], 'id_cv': [new_id_cv] , 'id_formation' : [new_id_formation],
-         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1], 'id_dipl' : [int(id_dipl) + 1], 'id_ecole' : [int(id_ecole) + 1] })
+         'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1], 'id_dipl' : [int(id_dipl) + 1], 'id_ecole' : [int(id_ecole) + 1] , 'id_etablissement' : [int(id_etabl) + 1],  'idExp' : [int(idExp) + 1]})
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
 

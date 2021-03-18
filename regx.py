@@ -161,3 +161,21 @@ def findFirstName_sexe(pdf_file,mail):
                         break
         fichier.close()
     return prenom,sexe
+
+
+def findCompetenceCat(compo):
+    cat = 'NULL'
+    compet = 'NULL'
+
+    competenceSpl = compo.split("'")
+    compo2 = competenceSpl[1];
+
+    fichier = open("Competences.csv", "r")
+    for line in fichier:
+        compet =  line.lower().split(',')[0].lower()
+        if compet == compo2.lower():
+            cat = line.lower().split(',')[1].upper()
+            break
+    fichier.close()
+    catsp = cat.split("\n")
+    return "'" + catsp[0] + "'"

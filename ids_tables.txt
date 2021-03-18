@@ -1,2 +1,2 @@
-id_adr,id_can,id_cv,id_formation,id_compet,id_lang,id_loisir,id_dipl,id_ecole
-258,294,294,116,1131,136,135,191,117
+id_adr,id_can,id_cv,id_formation,id_compet,id_lang,id_loisir,id_dipl,id_ecole,id_etablissement,idExp
+297,333,333,155,2198,253,281,269,263,175,175
