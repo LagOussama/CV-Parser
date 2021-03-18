@@ -1,23 +1,10 @@
-import sys, fitz
-import numpy as np
-import os
+import fitz
+
 from os import listdir
 from os.path import isfile, join
-import codecs
 import re
-import string
 import unidecode
-import progress_bar
-import soundex
-from strsimpy.normalized_levenshtein import NormalizedLevenshtein
-import operator
-import uuid
-from random import *
 import pandas as pd
-import cv2
-from pdf2image import convert_from_path
-from datetime import datetime
-import locale
 from deep_translator import GoogleTranslator
 import regx
 
@@ -72,9 +59,10 @@ def parse_string(storage_directory, pdf_file, text):
     adresse = regx.findAdresse(text)
     age = regx.findAge(text)
     permis = regx.findDriverlicence(text)
-    web = regx.findSites(text)
     nom  = regx.findName(pdf_file)
-    prenom, sexe  = regx.findFirstName_sexe(pdf_file,mail)
+    prenom  = regx.findPrenom(pdf_file,mail)
+
+    sexe = regx.findSexe(prenom)
 
     tabFormation = extraire_formation(text)
     tabExperience = get_experiences(text)
@@ -85,7 +73,7 @@ def parse_string(storage_directory, pdf_file, text):
     nom = unidecode.unidecode(nom)
     mail = unidecode.unidecode(mail)
     # Appelle de la fonction pour creer les requetes d'insertions
-    create_requete(storage_directory, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, web, 'NULL', 'NULL',
+    create_requete(storage_directory, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, 'NULL', 'NULL',
                    tabFormation, tabExperience, listCompetence, listLangues, listCentreInteret)
 
 
@@ -197,9 +185,20 @@ def extraire_langue(text):
     listLangue = []
     langue = "NULL"
     niveau = "NULL"
-    regex = r"(français|francais|anglais|Allemand|Kabyle|Arabe|Chinois|mandarin|hindi|bengali|panjabi|Espagnol|Deutsch|Turc|Berbère|Wolof|Tamoul|italien|portuguais|russe|japonais|danois|polonais|javanais|telougou|malais|coreen|marathi|turc|vietnamien|tamoul|italien|persan|thai|gujarati|polonais|pachtou|kannada|malayalam|soundanais|oriya|birman|ukrainien|bhojpouri|filipino |yorouba|maithili|ouzbek|sindhi|amharique|peul|roumain|oromo|igbo |azéri|awadhi|visayan|neerlandais|kurde|malgache|saraiki|chittagonien|khmer|turkmène|assamais|madourais|somali|marwari|magahi|haryanvi|hongrois|chhattisgarhi|grec|chewa|deccan|akan|kazakh|sylheti|zoulou|tcheque)[ ](.*?[ ].*?[ ].*?[ ])"
 
-    matches = re.finditer(regex, text, re.MULTILINE | re.IGNORECASE)
+
+    r = '('
+
+    fichier = open("Langues_1.csv", "r")
+    for line in fichier:
+        s = line.split(';')[0]
+        cats = s.split("\n")
+        r = r + cats[0] + "|"
+    fichier.close()
+
+    reg = r[0:len(r) - 1] +  r')[ ](.*?[ ].*?[ ].*?[ ])'
+
+    matches = re.finditer(reg, text, re.MULTILINE | re.IGNORECASE)
 
     for matchNum, match in enumerate(matches, start=1):
         for groupNum in range(0, len(match.groups())):
@@ -216,11 +215,23 @@ def extraire_langue(text):
 
 
 def extraire_centreInteret(text):
-    # clean le texte du cv
+    # clean le texte du cvManga
     s = cleanText(text)
 
-    regex = r"(Cyclisme|Patisserie|Lecture|Musique|Bricolages|Associations|Conférences|Mangas|Science|Jeux videos|Technologie|Physique|Philosophie|Travail Associatif|Planification|Entraînement physique|Transport et mobilité|technologies Web émergentes|Tennis de table|Bricolage|Voyage|Natation|handball|Engagement bénévole|Aviron|Boxe|Bénévolat|Photographie|Basketball|Football|cinéma|escalade|Photoshop|Tennis|SériesTV|Films|Art martiaux|musique|documentaire|Pâtisserie|volley-ball|bénévolat|Football|littérature|Cyclisme|Cuisiner|Hand-ball|Jeux cognitifs)"
-    matches = re.finditer(regex, s, re.MULTILINE | re.IGNORECASE)
+    r = "("
+    fichier = open("Loisirs.csv", "r")
+    for line in fichier:
+        s = line.split(';')[0]
+        cats = s.split("\n")
+        r = r + cats[0] + "|"
+    fichier.close()
+
+    reg = r[0:len(r)-1]
+    reg = reg + ")"
+
+    print(reg)
+
+    matches = re.finditer(reg, s, re.MULTILINE | re.IGNORECASE)
     listeCentreInteret = []
     competence = "null"
 
@@ -310,7 +321,7 @@ def get_experiences(text):
     return (explist)
 
 
-def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, site_res, date_naiss,
+def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom, sexe, permis, date_naiss,
                    nationalite, tabFormation,tabExperience ,listCompetence, listLangues, listCentreInteret):
     """
     Fonction permettant de créer les requêtes d'insertion dans le fichier .sql
@@ -471,16 +482,19 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
                 id_ecole = id_ecole  + 1 ;
 
             out_file.write(
-                'EXEC INSERT_Formations(' + str(id_formation) + ',' + specialite + ',' +
-                formation[3] + ',' + formation[4] + ',' + 'NULL' + ',' + niveau + ',' + str(id_dipl) + ',' + str(id_ecole) + ',' + str(
-                    id_can) + ');\n')
+                'EXEC INSERT_Formations(' + str(id_formation) + ',' + specialite  + ',' + niveau + ',' + str(id_dipl) + ',' + str(id_ecole)
+                     + ');\n')
+
+            out_file.write(
+                'EXEC INSERT_EtablissementPedaCandidat(' + str(id_ecole) + ',' + str(id_can) + ',' + formation[3] + ',' +formation[4] + ');\n')
+
             if ecole == 'NULL':
                 out_file.write(
-                    'EXEC INSERT_EtablissementPedagogique(' + str(id_ecole) + ',' + "'DetailsEtablissement'" + ','+ "'Ecole Inconnu'" + ',' +"'VILLE'"+ ',' + "'PAYS'" + ');\n')
+                    'EXEC INSERT_EtablissementPedagogique(' + str(id_ecole) + ',' + "'DetailsEtablissement'" + ','+ "'OTHER'" + ',' +"'OTHER'"+ ',' + "'OTHER'" + ');\n')
             else:
                 out_file.write(
                     'EXEC INSERT_EtablissementPedagogique(' + str(
-                        id_ecole) + ',' + "'DetailsEtablissement'" + ',' + ecole + ',' + "'VILLE'" + ',' + "'PAYS'" + ');\n')
+                        id_ecole) + ',' + "'DetailsEtablissement'" + ',' + ecole + ',' + "'OTHER'" + ',' + "'OTHER'" + ');\n')
 
     # Insertion Compétence
     new_list2 = []
@@ -516,56 +530,6 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
          'id_compet' :[int(id_compet) + 1], 'id_lang' : [int(id_lang) + 1],'id_loisir' : [int(id_loisir) + 1], 'id_dipl' : [int(id_dipl) + 1], 'id_ecole' : [int(id_ecole) + 1] , 'id_etablissement' : [int(id_etabl) + 1],  'idExp' : [int(idExp) + 1]})
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
-
-def find_cat_cpt(cpt):
-    cpt = cpt[1:]
-    cpt = cpt[:-1]
-    cat_bdd = ['APPRENTISSAGE', 'SASSOFTWARE', 'SASVIYA', 'BUSINESS OBJECTS', 'BUSINESSOBJECTS', 'SQL', 'ORACLE',
-               'JAVA/JEE', 'SQL3', 'MYSQL', 'DATA WAREHOUSE', 'PLSQL', 'NOSQL', 'MONGODB', 'DATABASE',
-               'DATA INTEGRATION', 'DATAQUALITY', 'SQLSERVER', 'SPRINGBOOT', 'SPRINGDATA', 'SPRINGSECURITY',
-               'BUSINESS INTELLIGENCE', 'TABLEAU', 'REPRESENTATION GRAPHIQUE DE DONNEES STATISTIQUES',
-               'MEETUP TAFTERWORKS']
-    cat_comp = ['INTERNET DES OBJETS', ' IOT']
-    cat_web = ['DEVELOPPEMENT DE CONTENU', 'PHPMYADMIN', 'JAVASCRIPT', 'PHP', 'J2E', 'HTML', 'CSS', 'XML', 'PHP5',
-               'SYMFONY', 'JS', 'CSS3', 'JAVASCRIPT']
-    cat_lang = ['C', 'SAS', 'PYTHON', 'JAVA', 'R', 'C++', 'C#', 'MATLAB', 'OCAML', 'UML', 'HASKELL', 'SCALA']
-    cat_crea = ['PHOTOSHOP', 'PHOTOGRAPHIE', 'VIDEOGRAPHIE', 'CREATIVITE']
-    cat_se = ['LINUX', 'MACOS', 'WINDOWS', 'UBUNTU', 'DEBIAN']
-    cat_outil = ['NETBEANS', 'ANDROIDSTUDIO', 'CODE:BLOCKS', 'VISUALSTUDIO', 'STVISUALDEVELOP', 'JUPYTER', 'ANACONDA',
-                 'SPYDER', 'TALEND', 'JIRA', 'TRELLO', 'JUPYTER-NOTEBOOK', 'SASSTUDIO', 'EXCEL', 'KNIME', 'COLAB',
-                 'MICROSOFTOFFICEEXCEL', 'PANDAS', 'NUMPY', 'SCIKIT-LEARN', 'SCIKIT-FUZZY', 'HADOOP', 'SPARK',
-                 'RSTUDIO', 'JUPYTERNOTEBOOK', 'ECLIPSE', 'STUDIOCODE', 'GIT', 'SASVIYA', 'METHODEAGILE', 'GITHUB',
-                 'POWERPOINT', 'APACHEKAKFA', 'DOMOTIQUE', 'WORD', 'EXCEL', 'MICROSOFT ASP.NET MVC.WEB API']
-    cat_softSkill = ['BENEVOLE', 'ANALYSE DES CONCURRENTS', 'COMMUNICATION', 'RESEAUTAGE', 'ESPRIT D EQUIPE',
-                     'TRAVAIL AUTONOME', 'CAPACITE A TRAVAILLER SOUS PRESSION', 'GESTION DU TEMPS',
-                     'RECHERCHE DE MARCHE', 'FACILITE DINTEGRATION', 'DIPLOMATIE', 'TRAVAILLEUR SOCIAL AGREE',
-                     'AUTODIDAXIE', 'ORGANISE', 'APPLIQUE', 'DYNAMIQUE', 'AGILE', 'ASSOCIATION', 'ACTION SOCIALE',
-                     'SENS DE RESPONSABILITÉS', 'TRAVAIL EN EQUIPE', 'FLEXIBLE', 'COMMUNICATION', 'ADAPTATION FACILE',
-                     'CAPACITE DADAPTATION', 'CURIEUX', 'TRAVAIL EN EQUIPE', 'ADAPTABLE', 'COMMUNICANT', 'SERIEUX',
-                     'MOTIVE', 'RIGOUREUX', 'BONNE APPROCHE DES CLIENTS', 'SENS  NEGOCIATION',
-                     'COMPETENCES RELATIONNELLES', 'ESPRIT DEQUIPE', 'TRAVAIL EN EQUIPE', ' RESPECT DES DELAIS',
-                     'ETABLIR UN CAHIER DES CHARGES', 'CAPACITE À SORGANISER', 'DETERMINE', 'CURIEUSE', 'RIGOUREUSE',
-                     'AVENTURES', 'RELATIONNEL', 'ADAPTABILITE', 'RIGUEUR', 'AUTONOMIE', 'TRAVAIL EN GROUPE',
-                     'TRAVAIL SOUS PRESSION', 'ECLIPSE', 'DYNAMIC', 'DYNAMIQUE', 'COLLABORATIVE WORK', 'COLLABORATIF',
-                     'PONCTUALITE', 'TRAVAIL EN GROUPE', 'GESTION DE TEMPS', 'ESPRIT D’ANALYSE']
-    if cpt.upper() in cat_bdd:
-        return '\'' + 'BASE DE DONNEES' + '\''
-    elif cpt.upper() in cat_lang:
-        return '\'' + 'LANGAGE DE PROGRAMMATION' + '\''
-    elif cpt.upper() in cat_comp:
-        return '\'' + 'ELECTRONIQUE' + '\''
-    elif cpt.upper() in cat_crea:
-        return '\'' + 'CREATIVITE' + '\''
-    elif cpt.upper() in cat_web:
-        return '\'' + 'WEB' + '\''
-    elif cpt.upper() in cat_se:
-        return '\'' + 'SYSTEME EXPLOITATION' + '\''
-    elif cpt.upper() in cat_outil:
-        return '\'' + 'OUTILS' + '\''
-    elif cpt.upper() in cat_softSkill:
-        return '\'' + 'SOFTSKILLS' + '\''
-    else:
-        return 'NULL'
 
 
 # Fonction permettant de séprarer les différents attributs d'une adresse

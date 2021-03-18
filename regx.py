@@ -92,75 +92,23 @@ def findName(pdf_file):
     return nom
 
 
-def findFirstName_sexe(pdf_file,mail):
+def findPrenom(pdf_file,mail):
     prenom = 'NULL'
-    sexe = 'NULL'
     if re.match(PDF_String_Format, pdf_file):
         prenom = re.sub(FName_String_Format, '\g<1>', pdf_file)
         prenom = prenom.strip().capitalize()
         fichier = open("Prenoms.csv", "r")
         for line in fichier:
             if line.lower().split(';')[0].lower() == prenom.lower():
-                sexe = line.lower().split(';')[1].upper()
-                sexe = '\'' + sexe[0] + '\''
+
                 break
         fichier.close()
-        # Si le prénom n'est pas dans la base de données
-        # On va essayer de trouver le sexe en fonction des sons (soundex) et de la distance (Levenshtein) entre les prénoms
-        # Ainsi, on va prendre un autre prénom proche phonétiquement et grammatiquement et on va prendre le sexe de ce prénom
-        if sexe == 'NULL':
-            dict_similitude = dict()
-            fichier = open("Prenoms.csv", "r")
-            for line in fichier:
-                # Si le prénom produit le même son
-                # On ajoute son score Levenshtein et le sexe associé
-                if soundex.get_soundex_code(line.lower().split(';')[0].lower()) == soundex.get_soundex_code(
-                        prenom.lower()):
-                    normalized_levenshtein = NormalizedLevenshtein()
-                    dict_similitude[
-                        normalized_levenshtein.similarity(line.lower().split(';')[0].lower(), prenom.lower())] = \
-                    line.lower().split(';')[1]
-            # On associe le sexe du prénom qui maximise la similarité entre les prénoms  (si le dictionnaire n'est pas vide)
-            if bool(dict_similitude):
-                sexe = dict_similitude[max(dict_similitude, key=dict_similitude.get)].upper()
-                sexe = '\'' + sexe[0] + '\''
-            fichier.close()
+
         prenom = corr_prenom(prenom)
         prenom = '\'' + prenom.strip() + '\''
-    # Si le pdf n'est pas de la forme souhaité (dans un but d'élargissement à d'autre CV)
-    # Dans notre Projet, si notre base de CV est bien construite, on ne tombe pas dans ce cas
-    else:
-        fichier = open("Prenoms.csv", "r")
-        for line in fichier:
-            # On cherche dans chaque PDF est ce que un mot (un prénom) apparait dans la base des prénoms
-            if line.lower().split(';')[0] in text.lower().split():
-                prenom = line.lower().split(';')[0]
-                prenom = corr_prenom(prenom)
 
-                sexe = line.split(';')[1].upper()
-                sexe = '\'' + sexe[0] + '\''
 
-                # Si le mot qu'on a désigné comme étant un prénom est présent dans le titre du pdf ou le mail du condidat, il y a de forte probabilité que ça soit bien le prénom
-                for adr in mail:
-                    if adr.lower().find(prenom.lower()) >= 0:
-                        prenom = corr_prenom(prenom)
-                        prenom = '\'' + prenom.strip() + '\''
-                        break
-                if pdf_file.lower().find(prenom.lower()) >= 0:
-                    prenom = corr_prenom(prenom)
-                    prenom = '\'' + prenom.strip() + '\''
-                    break
-            else:
-                # Si le prénom ne se trouve pas dans la base de données, on fonctionne avec la phonétique du nom du fichier
-                for mot in pdf_file.split('_'):
-                    mot = mot.replace('.', ' ')
-                    if soundex.get_soundex_code(line.lower().split(';')[0]) == soundex.get_soundex_code(mot):
-                        prenom = mot
-                        prenom = corr_prenom(prenom)
-                        prenom = '\'' + prenom.strip() + '\''
-                        break
-        fichier.close()
-    return prenom,sexe
+    return prenom
 
 
 def findCompetenceCat(compo):
@@ -179,3 +127,20 @@ def findCompetenceCat(compo):
     fichier.close()
     catsp = cat.split("\n")
     return "'" + catsp[0] + "'"
+
+def findSexe(prenom):
+    cat = 'NULL'
+
+    sexeSplit = prenom.split("'")
+    sexe = sexeSplit[1];
+    print(sexe)
+
+    fichier = open("prenom.csv", "r")
+    for line in fichier:
+        s =  line.lower().split(';')[0].lower()
+        if s == sexe.lower():
+            cat = line.lower().split(';')[1].upper()
+            break
+    fichier.close()
+    catsp = cat.split("\n")
+    return  "'" + catsp[0] + "'"
