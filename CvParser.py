@@ -229,8 +229,6 @@ def extraire_centreInteret(text):
     reg = r[0:len(r)-1]
     reg = reg + ")"
 
-    print(reg)
-
     matches = re.finditer(reg, s, re.MULTILINE | re.IGNORECASE)
     listeCentreInteret = []
     competence = "null"
@@ -600,14 +598,11 @@ if __name__ == '__main__':
     """
     Fonction Main
     """
-    # Traitement des CV acceptés
-    print('Traitement des CV acceptés')
-    # Fichier de stockage des PDF que l'on veut traiter
+    print('BEGIN')
+
     storage_file = './CV_ACCEPTE/'
-    # Chargement des PDF
 
     list_pdf_files = [f for f in listdir(storage_file) if isfile(join(storage_file, f))]
-    # Extraction de l'informations des PDF et création des requetes SQL dans les fichiers SQL
     read_pdf(storage_file, list_pdf_files)
 
-    print('Extraction des PDF terminée, vous pouvez lancer les fichiers SQL (.sql)')
+    print('WORK DONE ! ')

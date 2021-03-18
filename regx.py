@@ -97,7 +97,7 @@ def findPrenom(pdf_file,mail):
     if re.match(PDF_String_Format, pdf_file):
         prenom = re.sub(FName_String_Format, '\g<1>', pdf_file)
         prenom = prenom.strip().capitalize()
-        fichier = open("Prenoms.csv", "r")
+        fichier = open("prenom.csv", "r")
         for line in fichier:
             if line.lower().split(';')[0].lower() == prenom.lower():
 
@@ -132,8 +132,7 @@ def findSexe(prenom):
     cat = 'NULL'
 
     sexeSplit = prenom.split("'")
-    sexe = sexeSplit[1];
-    print(sexe)
+    sexe = sexeSplit[1]
 
     fichier = open("prenom.csv", "r")
     for line in fichier:
