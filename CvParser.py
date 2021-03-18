@@ -386,7 +386,7 @@ def create_requete(storage_file, pdf_file, mail, tel, adresse, age, prenom, nom,
     ids.to_csv('./ids_tables.txt', index=False, header=True, mode='w')
 
     # On écrit dans le fichier de sortie .sql
-    out_file = open('./G1_InsertDon_CV.sql', 'a')
+    out_file = open('./Insertion.sql', 'a')
 
     # Insertion Adresses
     if adresse != 'NULL':
