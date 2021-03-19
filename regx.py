@@ -133,7 +133,6 @@ def findSexe(prenom):
 
     sexeSplit = prenom.split("'")
     sexe = sexeSplit[1]
-
     fichier = open("prenom.csv", "r")
     for line in fichier:
         s =  line.lower().split(';')[0].lower()
