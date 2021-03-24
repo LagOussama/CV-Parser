@@ -218,17 +218,17 @@ def extraire_langue(text):
 def extraire_centreInteret(text):
     # clean le texte du cvManga
     s = cleanText(text)
+    reg = r"(Cyclisme|Patisserie|Lecture|Musique|Bricolages|Associations|Conférences|Mangas|Science|Jeux videos|Technologie|Physique|Philosophie|Travail Associatif|Planification|Entraînement physique|Transport et mobilité|technologies Web émergentes|Tennis de table|Bricolage|Voyage|Natation|handball|Engagement bénévole|Aviron|Boxe|Bénévolat|Photographie|Basketball|Football|cinéma|escalade|Photoshop|Tennis|SériesTV|Films|Art martiaux|musique|documentaire|Pâtisserie|volley-ball|bénévolat|Football|littérature|Cyclisme|Cuisiner|Hand-ball|Jeux cognitifs)"
 
-    r = "("
-    fichier = open("Loisirs.csv", "r")
-    for line in fichier:
-        s = line.split(';')[0]
-        cats = s.split("\n")
-        r = r + cats[0] + "|"
-    fichier.close()
-
-    reg = r[0:len(r)-1]
-    reg = reg + ")"
+    # r = '('
+    # fichier = open("Loisirs.csv", "r")
+    # for line in fichier:
+    #     s = line.split(';')[0]
+    #     cats = s.split("\n")
+    #     r = r + cats[0] + "|"
+    # fichier.close()
+    #
+    # reg = r[0:len(r)-1] + r')'
 
     matches = re.finditer(reg, s, re.MULTILINE | re.IGNORECASE)
     listeCentreInteret = []
